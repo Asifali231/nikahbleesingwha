@@ -1,0 +1,11 @@
+create extension if not exists "uuid-ossp";
+create table if not exists contacts (id uuid primary key default uuid_generate_v4(), phone text unique not null, name text, tags text[] default '{}', pipeline_stage text default 'lead', notes text, last_message_at timestamp default now(), created_at timestamp default now());
+create table if not exists conversations (id uuid primary key default uuid_generate_v4(), contact_id uuid references contacts(id) on delete cascade, status text default 'open', unread_count int default 0, created_at timestamp default now());
+create table if not exists messages (id uuid primary key default uuid_generate_v4(), conversation_id uuid references conversations(id) on delete cascade, contact_id uuid references contacts(id) on delete cascade, wamid text unique, direction text check (direction in ('in','out')), type text default 'text', content text, status text default 'sent', created_at timestamp default now());
+alter publication supabase_realtime add table messages;
+alter publication supabase_realtime add table conversations;
+alter publication supabase_realtime add table contacts;
+alter table contacts enable row level security; alter table conversations enable row level security; alter table messages enable row level security;
+create policy "allow all" on contacts for all using (true) with check (true);
+create policy "allow all" on conversations for all using (true) with check (true);
+create policy "allow all" on messages for all using (true) with check (true);
